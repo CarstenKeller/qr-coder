@@ -45,6 +45,20 @@ Vorschau, rechts Vorlagen und aufklappbare Einstellungsabschnitte.
 - **Quelle:** abgeleitet (Claude), 2026-11-10
 - **Status:** abgeleitet
 
+### A-03: App-Symbol (Favicon) ist ein echter kleiner QR-Code
+- **Entscheidung:** Favicon/App-Symbol = lesbarer QR-Code, Version 1
+  (21×21 Module), Inhalt "QR-Coder", quadratische Module in Fast-Schwarz,
+  abgerundete Eckmarken in der Akzentfarbe `#3b5bdb`, weiße Kachel mit runden
+  Ecken. Erzeugt mit dem eigenen Renderer (`npm run icons`), als SVG sowie
+  PNG 32 und 180 px.
+- **Begründung:** "Ein kleiner qr Code würde sich hier anbieten" (Nutzer,
+  2026-11-10). Version 1 und eckige Module, damit es bei 16 px erkennbar bleibt
+  (Ableitung von Claude).
+- **Abweichung von:** – (berührt die offene allgemeine Frage F-08 Launcher-Icon)
+- **Quelle:** Vorgabe des Nutzers (ohne /da) für die Grundidee, Umsetzung
+  abgeleitet, 2026-11-10
+- **Status:** bestätigt (Grundidee, 2026-11-10), Umsetzung abgeleitet
+
 ## Offene Designfragen dieser App
 
 - [ ] Akzentfarbe/Farbwelt der App (F-02) bestätigen

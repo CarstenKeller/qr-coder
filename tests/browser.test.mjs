@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { openApp, readPreview, ROOT } from './helpers.mjs';
+import { openApp, readPreview, decodePng, ROOT } from './helpers.mjs';
 
 const LONG = 'https://www.example.org/ein/recht/langer/pfad/zur/seite?mit=parametern&und=noch&mehr=1234567890';
 
@@ -253,6 +253,22 @@ test('Betrachter: fremdes Bild ohne Einstellungen – Inhalt wird gelesen, kein 
     assert.equal(v.hasState, false);
     assert.equal(await page.isVisible('#viewer-edit'), false);
   });
+});
+
+test('Favicon: echter QR-Code, eingebunden und in der Einzeldatei eingebettet', async () => {
+  const png = fs.readFileSync(path.join(ROOT, 'icons', 'icon-180.png'));
+  assert.equal(await decodePng(png), 'QR-Coder');
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  for (const f of ['favicon.svg', 'icon-32.png', 'icon-180.png']) {
+    assert.ok(html.includes('href="icons/' + f + '"'), f + ' in index.html');
+    assert.ok(fs.existsSync(path.join(ROOT, 'icons', f)), f + ' vorhanden');
+  }
+  const single = path.join(ROOT, 'dist', 'qr-coder.html');
+  if (fs.existsSync(single)) {
+    const s = fs.readFileSync(single, 'utf8');
+    assert.ok(!s.includes('href="icons/'), 'keine externen Symbol-Verweise in der Einzeldatei');
+    assert.match(s, /rel="icon" type="image\/svg\+xml" href="data:image\/svg\+xml;base64,/);
+  }
 });
 
 test('Einzeldatei-Build funktioniert ohne weitere Dateien', async (t) => {

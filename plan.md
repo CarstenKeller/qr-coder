@@ -86,6 +86,9 @@ einem bildgestalteten code, mit und ohne Bereiche für Text und Logos."
   QR-Coder erzeugte SVGs enthalten ihre Einstellungen (`<metadata>`) und lassen
   sich mit "Bearbeiten" im Editor fortsetzen.
 
+- [x] Favicon/App-Symbol als echter kleiner QR-Code (A-03), in der
+  Einzeldatei als data-URI eingebettet (2026-11-10).
+
 ## Phase 2 – Ideen
 
 - [ ] Einstellungen als JSON exportieren/importieren, eigene Vorlagen

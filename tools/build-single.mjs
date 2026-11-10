@@ -6,6 +6,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 let html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 html = html.replace(/<link rel="stylesheet" href="([^"]+)">/g, (m, p) => '<style>\n' + read(p) + '\n</style>');
+// Symbole als data-URI einbetten (Pages liefert nur diese eine Datei aus)
+html = html.replace(/href="(icons\/[^"]+\.(svg|png))"/g, (m, p, ext) => {
+  const buf = fs.readFileSync(path.join(root, p));
+  const mime = ext === 'svg' ? 'image/svg+xml' : 'image/png';
+  return 'href="data:' + mime + ';base64,' + buf.toString('base64') + '"';
+});
 html = html.replace(/<script src="([^"]+)"><\/script>/g, (m, p) => {
   const js = read(p).replace(/<\/script/gi, '<\\/script');
   return '<script>\n' + js + '\n</script>';
