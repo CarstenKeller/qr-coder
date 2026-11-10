@@ -83,7 +83,7 @@ einem bildgestalteten code, mit und ohne Bereiche für Text und Logos."
 - [ ] Logo frei positionierbar, mehrere Textfelder
 - [ ] Farbiger Halbton, Bildausschnitt wählen
 - [ ] Stapel-Erzeugung (CSV → viele SVGs)
-- [x] GitHub Pages: Deploy-Job eingerichtet (2026-11-10), Aktivierung durch Nutzer ausstehend
+- [x] GitHub Pages: aktiv seit 2026-11-10 (https://carstenkeller.github.io/qr-coder/), Deploy vom Sitzungs-Branch
 
 ## Fortschritt
 

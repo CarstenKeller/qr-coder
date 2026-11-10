@@ -77,9 +77,6 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    # Vorläufig: scheitert, bis Pages in den Repo-Einstellungen aktiviert ist;
-    # der Lauf soll trotzdem grün bleiben. Nach bestätigter Aktivierung entfernen.
-    continue-on-error: true
     permissions:
       pages: write
       id-token: write
