@@ -18,6 +18,8 @@
   </div>
   <div class="actions">
     <!-- Design D-01: Aktionen als Icon mit Tooltip -->
+    <button id="btn-open" type="button" class="icon-btn" data-icon="folder" data-tip-key="tip.open"></button>
+    <input id="open-file" type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" hidden>
     <button id="btn-reset" type="button" class="icon-btn" data-icon="reset" data-tip-key="tip.reset"></button>
     <div class="menu-wrap">
       <button id="btn-theme" type="button" class="icon-btn" data-icon="theme" data-tip-key="tip.theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-menu"></button>
@@ -40,6 +42,10 @@
         <button id="btn-svg" type="button" class="icon-btn primary" data-icon="download" data-tip-key="tip.svg"><span class="badge">SVG</span></button>
         <button id="btn-png" type="button" class="icon-btn" data-icon="image" data-tip-key="tip.png"><span class="badge">PNG</span></button>
         <button id="btn-copy" type="button" class="icon-btn" data-icon="copy" data-tip-key="tip.copy"></button>
+        <div class="menu-wrap">
+          <button id="btn-share" type="button" class="icon-btn" data-icon="share" data-tip-key="tip.share" aria-haspopup="true" aria-expanded="false"></button>
+          <div id="share-menu" class="menu menu-up" hidden></div>
+        </div>
         <label class="size-field"><span data-i18n="export.size"></span>
           <input id="export-size" type="number" min="16" max="8192" step="16" inputmode="numeric"></label>
       </div>
@@ -66,6 +72,26 @@
   </button>
   <button id="mini-close" type="button" class="icon-btn small mini-close" data-icon="close" data-tip-key="mini.close"></button>
 </div>
+
+<!-- Betrachter für gespeicherte Codes -->
+<dialog id="viewer" class="viewer" aria-labelledby="viewer-name">
+  <div class="viewer-head">
+    <div class="viewer-title"><strong id="viewer-name"></strong> <span id="viewer-size" class="note"></span></div>
+    <button id="viewer-close" type="button" class="icon-btn small" data-icon="close" data-tip-key="viewer.close"></button>
+  </div>
+  <div class="viewer-img-wrap"><img id="viewer-img" alt=""></div>
+  <div id="viewer-result" class="viewer-result" data-state="idle">
+    <span class="label" data-i18n="viewer.content"></span>
+    <code id="viewer-text"></code>
+  </div>
+  <div class="viewer-actions">
+    <span id="viewer-actions" class="row" hidden>
+      <button id="viewer-copy" type="button" class="icon-btn" data-icon="copy" data-tip-key="viewer.copy"></button>
+      <a id="viewer-link" class="icon-btn" data-icon="open" data-tip-key="viewer.openlink" target="_blank" rel="noopener noreferrer" hidden></a>
+    </span>
+    <button id="viewer-edit" type="button" class="icon-btn primary" data-icon="edit" data-tip-key="viewer.edit" hidden><span class="badge" data-i18n="viewer.editShort"></span></button>
+  </div>
+</dialog>
 
 <div id="toast" class="toast" role="status" hidden></div>
 

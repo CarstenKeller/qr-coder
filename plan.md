@@ -76,6 +76,16 @@ einem bildgestalteten code, mit und ohne Bereiche für Text und Logos."
   (2026-11-10). Am Desktop bleibt die große Vorschau stehen, dort erscheint
   sie nicht.
 
+- [x] SVG speichern mit "Speichern unter"-Dialog, wo der Browser ihn hat
+  (Desktop-Chrome/Edge); Chrome auf Android hat ihn laut Google-Doku nicht →
+  dort Download bzw. Teilen → "In Dateien speichern" (2026-11-10).
+- [x] Teilen über das Teilen-Menü des Geräts: PNG (für WhatsApp, das SVG nicht
+  als Bild anzeigt – Claudes Kenntnisstand, nicht geprüft) oder SVG-Datei.
+- [x] Betrachter: SVG/PNG/JPG öffnen (Knopf oder Datei auf die Seite ziehen),
+  sichere Anzeige als Bild, QR-Inhalt lesen, Link öffnen/kopieren; von
+  QR-Coder erzeugte SVGs enthalten ihre Einstellungen (`<metadata>`) und lassen
+  sich mit "Bearbeiten" im Editor fortsetzen.
+
 ## Phase 2 – Ideen
 
 - [ ] Einstellungen als JSON exportieren/importieren, eigene Vorlagen
@@ -83,6 +93,8 @@ einem bildgestalteten code, mit und ohne Bereiche für Text und Logos."
 - [ ] Logo frei positionierbar, mehrere Textfelder
 - [ ] Farbiger Halbton, Bildausschnitt wählen
 - [ ] Stapel-Erzeugung (CSV → viele SVGs)
+- [ ] Als App installierbar (PWA) mit "Teilen an QR-Coder" (Share Target), damit
+  SVGs aus der Dateien-App direkt im Betrachter landen
 - [x] GitHub Pages: aktiv seit 2026-11-10 (https://carstenkeller.github.io/qr-coder/), Deploy vom Sitzungs-Branch
 
 ## Fortschritt

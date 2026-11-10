@@ -308,7 +308,7 @@
 
     if (mode === 'dots' && assets.imageHref) {
       out.push('<image x="' + f(ox) + '" y="' + f(oy) + '" width="' + n + '" height="' + n +
-        '" preserveAspectRatio="xMidYMid slice" xlink:href="' + esc(assets.imageHref) + '"/>');
+        '" preserveAspectRatio="xMidYMid slice" data-role="image" xlink:href="' + esc(assets.imageHref) + '"/>');
       if (+im.veil > 0) out.push('<rect x="' + f(ox) + '" y="' + f(oy) + '" width="' + n + '" height="' + n +
         '" fill="' + esc(bg) + '" opacity="' + f(Math.min(1, +im.veil)) + '"/>');
     }
@@ -450,7 +450,7 @@
           clip = ' clip-path="url(#' + id + 'lc)"';
         }
         out.push('<image x="' + f(b.x) + '" y="' + f(b.y) + '" width="' + f(b.w) + '" height="' + f(b.h) + '"' + clip +
-          ' preserveAspectRatio="xMidYMid ' + (lg.shape === 'circle' ? 'slice' : 'meet') + '" xlink:href="' + esc(lg.image) + '"/>');
+          ' preserveAspectRatio="xMidYMid ' + (lg.shape === 'circle' ? 'slice' : 'meet') + '" data-role="logo" xlink:href="' + esc(lg.image) + '"/>');
       } else {
         const t = String(lg.text).trim();
         const fsz = Math.min(b.h * 0.62, b.w * 0.92 / Math.max(1, t.length * 0.62));

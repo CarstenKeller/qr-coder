@@ -373,6 +373,10 @@
     copy: ic('M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z'),
     theme: ic('M20 15.31L23.31 12 20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69zM12 18V6c3.31 0 6 2.69 6 6s-2.69 6-6 6z'),
     reset: ic('M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z'),
+    folder: ic('M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z'),
+    share: ic('M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z'),
+    edit: ic('M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'),
+    open: ic('M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z'),
     close: ic('M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z')
   };
 
@@ -401,6 +405,8 @@
     sizeIn.addEventListener('input', () => { const v = parseInt(sizeIn.value, 10); if (v >= 16 && v <= 8192) { state.export.size = v; changed(); } });
 
     $('#btn-svg').addEventListener('click', downloadSVG);
+    setupShare();
+    setupViewer();
     $('#btn-png').addEventListener('click', downloadPNG);
     $('#btn-copy').addEventListener('click', copySVG);
     $('#btn-reset').addEventListener('click', resetAll);
@@ -672,24 +678,209 @@
 
   // ------------------------------------------------------------ Export
 
-  function setExportEnabled(on) { for (const id of ['btn-svg', 'btn-png', 'btn-copy']) $('#' + id).disabled = !on; }
+  function setExportEnabled(on) { for (const id of ['btn-svg', 'btn-png', 'btn-copy', 'btn-share']) $('#' + id).disabled = !on; }
   function baseName() {
     const p = (last && last.payload) || 'qr';
     const slug = p.replace(/^[a-z]+:\/\//i, '').replace(/^(WIFI|SMSTO|mailto|tel):/i, '').replace(/[^a-z0-9äöüß]+/gi, '-')
       .replace(/^-+|-+$/g, '').slice(0, 40).toLowerCase();
     return 'qr-' + (slug || 'code');
   }
-  function svgFile() { return '<?xml version="1.0" encoding="UTF-8"?>\n' + last.r.svg; }
-  function saveBlob(blob, name) {
+  /** Exportierte SVG-Datei: mit eingebetteten Einstellungen (zum späteren Weiterbearbeiten im Betrachter). */
+  function svgFile() {
+    const meta = JSON.parse(JSON.stringify(state));
+    // Bilder, die ohnehin als <image> im SVG stehen, nicht doppelt ablegen
+    const o = last.r.options;
+    if (o.logo.enabled && o.logo.kind === 'image' && meta.logo.image) meta.logo.image = '@svg';
+    if (o.image.enabled && o.image.mode === 'dots' && meta.image.src) meta.image.src = '@svg';
+    const json = JSON.stringify({ app: 'qr-coder', v: 1, state: meta }).replace(/--/g, '-\\u002d').replace(/</g, '\\u003c');
+    const svg = last.r.svg.replace(/^(<svg[^>]*>)/, '$1<metadata id="qr-coder-settings"><!--' + json + '--></metadata>');
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' + svg;
+  }
+  function saveBlob(blob, name, hint) {
     const url = URL.createObjectURL(blob);
     const a = h('a', { href: url, download: name });
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
-    toast(t('saved', { name }));
+    toast(t('saved', { name }) + (hint ? ' – ' + hint : ''));
   }
-  function downloadSVG() {
+  // SVG: "Speichern unter"-Dialog, wo der Browser ihn anbietet (Desktop-Chrome/Edge);
+  // sonst normaler Download. Chrome auf Android hat laut Google-Doku keinen solchen Dialog –
+  // dort führt "Teilen" → z. B. "In Dateien/Drive speichern" zum frei wählbaren Ort.
+  async function downloadSVG() {
     if (!last || last.r.error) return;
-    saveBlob(new Blob([svgFile()], { type: 'image/svg+xml' }), baseName() + '.svg');
+    const blob = new Blob([svgFile()], { type: 'image/svg+xml' });
+    const name = baseName() + '.svg';
+    if (typeof window.showSaveFilePicker === 'function') {
+      try {
+        const fh = await window.showSaveFilePicker({ suggestedName: name,
+          types: [{ description: 'SVG', accept: { 'image/svg+xml': ['.svg'] } }] });
+        const w = await fh.createWritable();
+        await w.write(blob); await w.close();
+        toast(t('saved', { name: fh.name || name }));
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return; // Nutzer hat abgebrochen
+      }
+    }
+    saveBlob(blob, name, canShareType('image/svg+xml') ? t('saved.hint') : '');
+  }
+
+  // ------------------------------------------------------------ Teilen
+
+  function canShareType(type) {
+    try {
+      return !!(navigator.canShare && navigator.share &&
+        navigator.canShare({ files: [new File(['x'], 'test.' + (type === 'image/png' ? 'png' : 'svg'), { type })] }));
+    } catch (e) { return false; }
+  }
+  function setupShare() {
+    const btn = $('#btn-share'), menu = $('#share-menu');
+    const items = [
+      { type: 'image/png', label: t('share.png') },
+      { type: 'image/svg+xml', label: t('share.svg') }
+    ].filter(it => canShareType(it.type));
+    if (!items.length) { btn.hidden = true; return; }
+    for (const it of items) {
+      menu.append(h('button', { type: 'button', class: 'menu-btn', 'data-type': it.type, text: it.label,
+        onclick: () => { menu.hidden = true; shareAs(it.type); } }));
+    }
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (items.length === 1) { shareAs(items[0].type); return; }
+      menu.hidden = !menu.hidden;
+      btn.setAttribute('aria-expanded', String(!menu.hidden));
+    });
+    document.addEventListener('click', e => { if (!menu.contains(e.target) && e.target !== btn) menu.hidden = true; });
+  }
+  async function shareAs(type) {
+    if (!last || last.r.error) return;
+    let file;
+    if (type === 'image/png') {
+      const r = last.r;
+      const c = await rasterize(r.svg, r.width, r.height, Math.min(r.width, 1600), r.options.colors.transparent ? '#ffffff' : null);
+      const blob = await new Promise(res => c.toBlob(res, 'image/png'));
+      file = new File([blob], baseName() + '.png', { type });
+    } else {
+      file = new File([svgFile()], baseName() + '.svg', { type });
+    }
+    try {
+      await navigator.share({ files: [file], title: 'QR-Code' });
+    } catch (e) {
+      if (!e || e.name !== 'AbortError') toast(t('share.failed'));
+    }
+  }
+
+  // ------------------------------------------------------------ Betrachter (SVG/Bild öffnen)
+
+  let viewerData = null;
+  function setupViewer() {
+    const input = $('#open-file');
+    $('#btn-open').addEventListener('click', () => input.click());
+    input.addEventListener('change', () => { if (input.files && input.files[0]) openFile(input.files[0]); input.value = ''; });
+    // Datei auf die Seite ziehen
+    document.addEventListener('dragover', e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) e.preventDefault(); });
+    document.addEventListener('drop', e => {
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f && /^image\//.test(f.type || '') || (f && /\.svg$/i.test(f.name))) { e.preventDefault(); openFile(f); }
+    });
+    const dlg = $('#viewer');
+    $('#viewer-close').addEventListener('click', () => dlg.close());
+    dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+    dlg.addEventListener('close', () => { const img = $('#viewer-img'); if (img.src) URL.revokeObjectURL(img.src); img.removeAttribute('src'); });
+    $('#viewer-copy').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(viewerData.text); toast(t('viewer.copied')); } catch (e) { toast(t('copy.failed')); }
+    });
+    $('#viewer-edit').addEventListener('click', () => {
+      if (!viewerData || !viewerData.state) return;
+      state = QRC.merge(defaultState(), viewerData.state);
+      dlg.close();
+      changed(true);
+      toast(t('viewer.loaded'));
+      $('.preview-card').scrollIntoView({ block: 'start' });
+    });
+  }
+
+  /** Datei (SVG, PNG, JPG …) sicher anzeigen, QR-Inhalt lesen, eingebettete Einstellungen finden. */
+  async function openFile(file) {
+    const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name);
+    if (!isSvg && !/^image\//.test(file.type || '')) { toast(t('viewer.unsupported')); return; }
+    viewerData = { text: null, state: null };
+    const dlg = $('#viewer');
+    $('#viewer-name').textContent = file.name;
+    $('#viewer-size').textContent = Math.max(1, Math.round(file.size / 1024)) + ' kB';
+    $('#viewer-result').dataset.state = 'checking';
+    $('#viewer-text').textContent = t('scan.checking');
+    $('#viewer-actions').hidden = true;
+    $('#viewer-edit').hidden = true;
+    $('#viewer-link').hidden = true;
+    // Anzeige als <img>: Skripte in fremden SVGs werden so nicht ausgeführt
+    let blob = file;
+    if (isSvg) {
+      const text = await file.text();
+      viewerData.state = readEmbeddedState(text);
+      blob = new Blob([text], { type: 'image/svg+xml' });
+    }
+    const url = URL.createObjectURL(blob);
+    const img = $('#viewer-img');
+    img.src = url;
+    if (!dlg.open) dlg.showModal();
+    $('#viewer-edit').hidden = !viewerData.state;
+    try {
+      await img.decode();
+      const found = await decodeImage(img);
+      viewerData.text = found;
+      if (found == null) {
+        $('#viewer-result').dataset.state = 'fail';
+        $('#viewer-text').textContent = t('viewer.nocode');
+      } else {
+        $('#viewer-result').dataset.state = 'ok';
+        $('#viewer-text').textContent = found;
+        $('#viewer-actions').hidden = false;
+        const link = $('#viewer-link');
+        if (/^https?:\/\//i.test(found)) { link.href = found; link.hidden = false; }
+      }
+    } catch (e) {
+      $('#viewer-result').dataset.state = 'fail';
+      $('#viewer-text').textContent = t('viewer.broken');
+    }
+  }
+
+  function readEmbeddedState(svgText) {
+    try {
+      const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+      const meta = doc.getElementById('qr-coder-settings');
+      if (!meta) return null;
+      // Inhalt steht in einem XML-Kommentar (textContent enthält Kommentare nicht)
+      const raw = [...meta.childNodes].map(n => n.nodeValue || '').join('').trim();
+      const data = JSON.parse(raw);
+      if (!data || data.app !== 'qr-coder' || !data.state) return null;
+      const st = data.state;
+      const href = role => { const el = doc.querySelector('image[data-role="' + role + '"]');
+        return el ? (el.getAttribute('xlink:href') || el.getAttributeNS('http://www.w3.org/1999/xlink', 'href') || el.getAttribute('href') || '') : ''; };
+      if (st.logo && st.logo.image === '@svg') st.logo.image = href('logo');
+      if (st.image && st.image.src === '@svg') st.image.src = href('image');
+      return st;
+    } catch (e) { return null; }
+  }
+
+  async function decodeImage(img) {
+    const w0 = img.naturalWidth || 800, h0 = img.naturalHeight || 800;
+    const k = 900 / Math.max(w0, h0);
+    const c = document.createElement('canvas');
+    c.width = Math.round(w0 * k); c.height = Math.round(h0 * k);
+    const x = c.getContext('2d');
+    x.fillStyle = '#ffffff'; x.fillRect(0, 0, c.width, c.height);
+    x.drawImage(img, 0, 0, c.width, c.height);
+    const data = x.getImageData(0, 0, c.width, c.height);
+    const zxing = await getZXing();
+    if (zxing) {
+      try {
+        const res = await zxing.readBarcodes(data, { formats: ['QRCode'], tryHarder: true, maxNumberOfSymbols: 1 });
+        if (res.length) return res[0].text;
+      } catch (e) { /* weiter mit jsQR */ }
+    }
+    if (window.jsQR) { const r = window.jsQR(data.data, data.width, data.height, { inversionAttempts: 'attemptBoth' }); if (r) return r.data; }
+    return null;
   }
   async function downloadPNG() {
     if (!last || last.r.error) return;
@@ -738,6 +929,8 @@
     current() { return last ? { svg: last.r.svg, payload: last.payload, error: last.r.error, pending: last.r.pending && last.r.pending.length, stats: last.r.stats } : null },
     ready() { return Promise.all([...imgCache.values()]).then(() => { renderPreview(); }); },
     scanState() { return $('#scan').dataset.state; },
-    miniVisible() { return !$('#mini-preview').hidden; }
+    miniVisible() { return !$('#mini-preview').hidden; },
+    svgFile() { return svgFile(); },
+    viewer() { return viewerData ? { text: viewerData.text, hasState: !!viewerData.state, open: $('#viewer').open } : null; }
   };
 })();

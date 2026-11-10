@@ -4,6 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { openApp, readPreview, ROOT } from './helpers.mjs';
 
 const LONG = 'https://www.example.org/ein/recht/langer/pfad/zur/seite?mit=parametern&und=noch&mehr=1234567890';
@@ -81,11 +82,13 @@ test('Oberfläche: Bedienelemente ändern die Vorschau, Datei-Upload, Download',
     await page.setInputFiles('#sec-logo input[type=file]', logo);
     await page.waitForFunction(() => window.QRCApp.getState().logo.image.startsWith('data:image/svg'));
     await expectReadable(page, 'upload logo');
-    // Download
+    // Download (Rückfall ohne "Speichern unter"-Dialog)
+    await page.evaluate(() => { window.showSaveFilePicker = undefined; });
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#btn-svg')]);
     const file = await dl.path();
     const txt = fs.readFileSync(file, 'utf8');
     assert.match(txt, /^<\?xml version="1\.0" encoding="UTF-8"\?>\n<svg /);
+    assert.match(txt, /<metadata id="qr-coder-settings"><!--\{"app":"qr-coder"/);
     assert.match(dl.suggestedFilename(), /^qr-.*\.svg$/);
     // Lesbarkeitsanzeige
     await page.waitForFunction(() => ['ok', 'hard'].includes(window.QRCApp.scanState()), null, { timeout: 10000 });
@@ -127,6 +130,100 @@ test('Mini-Vorschau: am Desktop nicht nötig (große Vorschau bleibt stehen)', a
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(300);
     assert.equal(await page.evaluate(() => window.QRCApp.miniVisible()), false);
+  });
+});
+
+test('SVG speichern: "Speichern unter"-Dialog, wenn der Browser ihn hat', async () => {
+  const init = () => {
+    window.__written = null;
+    window.showSaveFilePicker = async (opts) => ({
+      name: 'gewaehlt.svg',
+      createWritable: async () => ({ write: async b => { window.__written = { opts, text: await b.text() }; }, close: async () => {} })
+    });
+  };
+  const app = await openApp('index.html', undefined, init);
+  try {
+    await app.page.click('#btn-svg');
+    await app.page.waitForFunction(() => window.__written);
+    const w = await app.page.evaluate(() => window.__written);
+    assert.match(w.opts.suggestedName, /^qr-.*\.svg$/);
+    assert.match(w.text, /^<\?xml/);
+  } finally { await app.browser.close(); }
+  assert.deepEqual(app.errors, []);
+});
+
+test('Teilen: PNG und SVG als Datei, wenn der Browser Dateien teilen kann', async () => {
+  const init = () => {
+    window.__shared = [];
+    navigator.canShare = () => true;
+    navigator.share = async d => { window.__shared.push(d.files.map(f => ({ name: f.name, type: f.type, size: f.size }))); };
+  };
+  const app = await openApp('index.html', { width: 390, height: 844 }, init);
+  try {
+    const { page } = app;
+    assert.equal(await page.isVisible('#btn-share'), true);
+    await page.click('#btn-share');
+    await page.click('#share-menu [data-type="image/png"]');
+    await page.waitForFunction(() => window.__shared.length === 1);
+    await page.click('#btn-share');
+    await page.click('#share-menu [data-type="image/svg+xml"]');
+    await page.waitForFunction(() => window.__shared.length === 2);
+    const sh = await page.evaluate(() => window.__shared);
+    assert.equal(sh[0][0].type, 'image/png'); assert.match(sh[0][0].name, /\.png$/); assert.ok(sh[0][0].size > 1000);
+    assert.equal(sh[1][0].type, 'image/svg+xml'); assert.match(sh[1][0].name, /\.svg$/);
+  } finally { await app.browser.close(); }
+  assert.deepEqual(app.errors, []);
+});
+
+test('Teilen-Knopf fehlt, wenn der Browser keine Dateien teilen kann', async () => {
+  const app = await openApp('index.html', undefined, () => { navigator.canShare = undefined; });
+  try { assert.equal(await app.page.isVisible('#btn-share'), false); } finally { await app.browser.close(); }
+});
+
+test('Betrachter: gespeichertes SVG öffnen, Inhalt lesen, im Editor weiterbearbeiten', async () => {
+  await withApp('index.html', async ({ page }) => {
+    // Code mit Logo-Bild und eigenem Inhalt erzeugen und als Datei "speichern"
+    const logo = 'data:image/svg+xml;base64,' + fs.readFileSync(path.join(ROOT, 'tests', 'fixtures', 'logo.svg')).toString('base64');
+    await page.evaluate(l => {
+      window.QRCApp.setState({ content: { type: 'text', fields: { text: { text: 'Hallo Betrachter' } } } });
+      window.QRCApp.applyPreset('logo');
+      window.QRCApp.setState({ logo: { image: l } });
+    }, logo);
+    await page.evaluate(() => window.QRCApp.ready());
+    const svg = await page.evaluate(() => window.QRCApp.svgFile());
+    const file = path.join(os.tmpdir(), 'qrc-viewer-test.svg');
+    fs.writeFileSync(file, svg);
+    // anderen Zustand herstellen
+    await page.evaluate(() => window.QRCApp.setState({ content: { type: 'url', fields: { url: { url: 'https://example.com' } } } }));
+    await page.evaluate(() => window.QRCApp.applyPreset('classic'));
+    // öffnen
+    await page.setInputFiles('#open-file', file);
+    await page.waitForFunction(() => { const v = window.QRCApp.viewer(); return v && v.open && v.text !== null; }, null, { timeout: 15000 });
+    const v = await page.evaluate(() => window.QRCApp.viewer());
+    assert.equal(v.text, 'Hallo Betrachter');
+    assert.equal(v.hasState, true);
+    assert.equal(await page.isVisible('#viewer-edit'), true);
+    await page.click('#viewer-edit');
+    const st = await page.evaluate(() => window.QRCApp.getState());
+    assert.equal(st.content.type, 'text');
+    assert.equal(st.logo.enabled, true);
+    assert.equal(st.logo.image, logo, 'Logo-Bild aus dem SVG wiederhergestellt');
+    assert.equal(await page.evaluate(() => document.getElementById('viewer').open), false);
+    await expectReadable(page, 'nach Übernahme');
+  });
+});
+
+test('Betrachter: fremdes Bild ohne Einstellungen – Inhalt wird gelesen, kein Bearbeiten', async () => {
+  await withApp('index.html', async ({ page }) => {
+    const r = await readPreview(page); // PNG-Screenshot der aktuellen Vorschau als "fremde" Datei
+    const file = path.join(os.tmpdir(), 'qrc-viewer-test.png');
+    fs.writeFileSync(file, r.png);
+    await page.setInputFiles('#open-file', file);
+    await page.waitForFunction(() => { const v = window.QRCApp.viewer(); return v && v.open && v.text !== null; }, null, { timeout: 15000 });
+    const v = await page.evaluate(() => window.QRCApp.viewer());
+    assert.equal(v.text, r.payload);
+    assert.equal(v.hasState, false);
+    assert.equal(await page.isVisible('#viewer-edit'), false);
   });
 });
 

@@ -21,9 +21,10 @@ export async function decodePng(png) {
   return res.length ? res[0].text : null;
 }
 
-export async function openApp(file = 'index.html', viewport = { width: 1280, height: 900 }) {
+export async function openApp(file = 'index.html', viewport = { width: 1280, height: 900 }, initScript) {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport, locale: 'de-DE' });
+  if (initScript) await page.addInitScript(initScript);
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
