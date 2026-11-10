@@ -69,6 +69,13 @@ einem bildgestalteten code, mit und ohne Bereiche für Text und Logos."
 - [x] DE/EN, Hell/Dunkel/System, Einstellungen bleiben erhalten
 - [x] CI: Tests + Einzeldatei-Build + Release mit Commit-Hash
 
+## Phase 1b – Rückmeldungen des Nutzers
+
+- [x] Mini-Vorschau als Overlay oben rechts, sobald die große Vorschau aus dem
+  Bild gescrollt ist; wegklickbar, wieder einschaltbar im Menü "Darstellung"
+  (2026-11-10). Am Desktop bleibt die große Vorschau stehen, dort erscheint
+  sie nicht.
+
 ## Phase 2 – Ideen
 
 - [ ] Einstellungen als JSON exportieren/importieren, eigene Vorlagen

@@ -75,7 +75,11 @@
     'p.banner.text': 'SCAN MICH', 'p.textlogo.top': 'Unsere Webseite',
     'footer': 'Alles läuft lokal in deinem Browser – es werden keine Daten verschickt.',
     'footer.licenses': 'Verwendet qrcode-generator (MIT), jsQR (Apache 2.0) und zxing-wasm (MIT, mit ZXing-C++, Apache 2.0). „QR Code“ ist eine Marke der DENSO WAVE INCORPORATED.',
-    'remove': 'Entfernen'
+    'remove': 'Entfernen',
+    'mini.option': 'Mini-Vorschau beim Scrollen',
+    'mini.open': 'Zur großen Vorschau',
+    'mini.close': 'Mini-Vorschau ausblenden',
+    'mini.hidden': 'Mini-Vorschau ausgeblendet – wieder einschalten unter „Darstellung“'
   };
   const en = {
     'app.tagline': 'Design QR codes and save them as SVG',
@@ -141,7 +145,11 @@
     'p.banner.text': 'SCAN ME', 'p.textlogo.top': 'Our website',
     'footer': 'Everything runs locally in your browser – no data is sent anywhere.',
     'footer.licenses': 'Uses qrcode-generator (MIT), jsQR (Apache 2.0) and zxing-wasm (MIT, with ZXing-C++, Apache 2.0). "QR Code" is a trademark of DENSO WAVE INCORPORATED.',
-    'remove': 'Remove'
+    'remove': 'Remove',
+    'mini.option': 'Mini preview while scrolling',
+    'mini.open': 'Go to the large preview',
+    'mini.close': 'Hide mini preview',
+    'mini.hidden': 'Mini preview hidden – turn it back on under "Appearance"'
   };
   QRC.strings = { de, en };
   QRC.pickLang = function (langs) {

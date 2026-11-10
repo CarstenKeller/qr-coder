@@ -92,6 +92,44 @@ test('Oberfläche: Bedienelemente ändern die Vorschau, Datei-Upload, Download',
   });
 });
 
+test('Mini-Vorschau: erscheint beim Scrollen am Handy, lässt sich aus- und wieder einschalten', async () => {
+  const app = await openApp('index.html', { width: 390, height: 844 });
+  const { page, browser, errors } = app;
+  try {
+    const visible = () => page.evaluate(() => window.QRCApp.miniVisible());
+    assert.equal(await visible(), false, 'oben: keine Mini-Vorschau');
+    await page.click('summary:has-text("Farben")');
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForFunction(() => window.QRCApp.miniVisible());
+    // Änderung unten wirkt sofort in der Mini-Vorschau
+    await page.evaluate(() => window.QRCApp.setState({ colors: { fg: '#c92a2a' } }));
+    assert.match(await page.innerHTML('#mini-svg'), /#c92a2a/);
+    assert.ok(!(await page.innerHTML('#mini-svg')).includes('id="pv-'), 'eigene IDs');
+    // wegklicken
+    await page.click('#mini-close');
+    assert.equal(await visible(), false);
+    assert.equal(await page.evaluate(() => localStorage.getItem('qrc.miniPreview')), 'off');
+    // über "Darstellung" wieder einschalten
+    await page.click('#btn-theme');
+    await page.check('#opt-mini');
+    await page.waitForFunction(() => window.QRCApp.miniVisible());
+    // Tipp auf die Mini-Vorschau springt zur großen Vorschau, Mini verschwindet
+    await page.keyboard.press('Escape');
+    await page.click('#mini-open');
+    await page.waitForFunction(() => !window.QRCApp.miniVisible());
+  } finally { await browser.close(); }
+  assert.deepEqual(errors, []);
+});
+
+test('Mini-Vorschau: am Desktop nicht nötig (große Vorschau bleibt stehen)', async () => {
+  await withApp('index.html', async ({ page }) => {
+    for (const s of await page.$$('details.sec')) await s.evaluate(d => { d.open = true; });
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(300);
+    assert.equal(await page.evaluate(() => window.QRCApp.miniVisible()), false);
+  });
+});
+
 test('Einzeldatei-Build funktioniert ohne weitere Dateien', async (t) => {
   const single = path.join(ROOT, 'dist', 'qr-coder.html');
   if (!fs.existsSync(single)) { t.skip('dist/qr-coder.html fehlt – vorher npm run build'); return; }

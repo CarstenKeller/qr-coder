@@ -58,6 +58,15 @@
   <p class="small" data-i18n="footer.licenses"></p>
 </footer>
 
+<!-- Mini-Vorschau beim Scrollen (abschaltbar, wieder einschaltbar im Menü "Darstellung") -->
+<div id="mini-preview" class="mini" data-state="idle" hidden>
+  <button id="mini-open" type="button" class="mini-open" data-tip-key="mini.open">
+    <span id="mini-svg" class="mini-svg"></span>
+    <span class="mini-dot" aria-hidden="true"></span>
+  </button>
+  <button id="mini-close" type="button" class="icon-btn small mini-close" data-icon="close" data-tip-key="mini.close"></button>
+</div>
+
 <div id="toast" class="toast" role="status" hidden></div>
 
 <script src="vendor/qrcode.js"></script>

@@ -7,7 +7,7 @@
   QRC.lang = QRC.pickLang(navigator.languages || [navigator.language]);
   document.documentElement.lang = QRC.lang;
 
-  const STORE_KEY = 'qrc.state.v1', THEME_KEY = 'qrc.theme';
+  const STORE_KEY = 'qrc.state.v1', THEME_KEY = 'qrc.theme', MINI_KEY = 'qrc.miniPreview';
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
@@ -432,12 +432,17 @@
       r.addEventListener('change', () => { applyTheme(v); store.set(THEME_KEY, v); closeMenu(); });
       menu.append(h('div', { class: 'menu-item' }, [r, h('label', { for: id, text: t('theme.' + v) })]));
     }
+    menu.append(h('hr', { class: 'menu-sep' }));
+    const mini = h('input', { type: 'checkbox', id: 'opt-mini', checked: miniEnabled });
+    mini.addEventListener('change', () => setMiniEnabled(mini.checked));
+    menu.append(h('div', { class: 'menu-item' }, [mini, h('label', { for: 'opt-mini', text: t('mini.option') })]));
     const btn = $('#btn-theme');
     const closeMenu = () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
     btn.addEventListener('click', e => {
       e.stopPropagation();
       menu.hidden = !menu.hidden; btn.setAttribute('aria-expanded', String(!menu.hidden));
-      if (!menu.hidden) { const c = menu.querySelector('input:checked'); if (c) c.focus(); }
+      $('#opt-mini').checked = miniEnabled;
+      if (!menu.hidden) { const c = menu.querySelector('input[type=radio]:checked'); if (c) c.focus(); }
     });
     document.addEventListener('click', e => { if (!menu.contains(e.target)) closeMenu(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
@@ -466,6 +471,7 @@
     warn.replaceChildren();
     if (r.error) {
       pv.innerHTML = '';
+      updateMini();
       pv.append(h('p', { class: 'empty', text: r.error === 'empty' ? t('err.empty') : t('err.too-long', { ecc: r.ecc, max: QRC.maxBytes[r.ecc] }) }));
       info.textContent = '';
       setScan('idle');
@@ -473,6 +479,7 @@
       return;
     }
     pv.innerHTML = r.svg;
+    updateMini();
     setExportEnabled(true);
     info.textContent = t('info', { v: r.stats.version, n: r.stats.n, ecc: r.stats.ecc, bytes: r.bytes });
     const ws = [];
@@ -535,12 +542,63 @@
     if (all || p !== lastPayload) { lastPayload = p; renderThumbs(); }
   }
 
+  // ------------------------------------------------------------ Mini-Vorschau
+  // Kleines Overlay oben rechts, solange die große Vorschau aus dem Bild gescrollt ist
+  // (am Desktop bleibt die große Vorschau stehen, dort erscheint es praktisch nie).
+
+  let miniEnabled = store.get(MINI_KEY) !== 'off';
+  let previewVisible = true;
+  function updateMini() {
+    const box = $('#mini-preview');
+    if (!box) return;
+    const ok = last && !last.r.error;
+    const show = miniEnabled && !previewVisible && ok;
+    if (show) {
+      // eigene IDs, damit Verläufe/Clip-Pfade nicht mit der großen Vorschau kollidieren
+      const svg = last.r.svg.replace(/id="pv-/g, 'id="mini-').replace(/url\(#pv-/g, 'url(#mini-');
+      const holder = $('#mini-svg');
+      if (holder.dataset.src !== svg) { holder.innerHTML = svg; holder.dataset.src = svg; }
+    }
+    box.hidden = !show;
+  }
+  function setMiniEnabled(on, quiet) {
+    miniEnabled = on;
+    store.set(MINI_KEY, on ? 'on' : 'off');
+    const cb = $('#opt-mini'); if (cb) cb.checked = on;
+    updateMini();
+    if (!on && !quiet) toast(t('mini.hidden'), { label: '↶', action: () => setMiniEnabled(true, true) });
+  }
+  function setupMini() {
+    const topbar = $('.topbar');
+    const setTop = () => document.documentElement.style.setProperty('--topbar-h', topbar.offsetHeight + 'px');
+    setTop(); window.addEventListener('resize', setTop);
+    $('#mini-open').addEventListener('click', () => {
+      $('.preview-card').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    });
+    $('#mini-close').addEventListener('click', () => setMiniEnabled(false));
+    const target = $('#preview');
+    if ('IntersectionObserver' in window) {
+      // "sichtbar" = mindestens ein Viertel der Vorschau unterhalb der Kopfzeile im Bild
+      let io;
+      const observe = () => {
+        if (io) io.disconnect();
+        io = new IntersectionObserver(es => {
+          previewVisible = es[0].isIntersecting;
+          updateMini();
+        }, { threshold: 0.25, rootMargin: '-' + topbar.offsetHeight + 'px 0px 0px 0px' });
+        io.observe(target);
+      };
+      observe(); window.addEventListener('resize', debounce(observe, 200));
+    }
+  }
+
   // ------------------------------------------------------------ Lesbarkeit
 
   let scanSeq = 0;
   function setScan(kind, note) {
     const el = $('#scan');
     el.dataset.state = kind;
+    $('#mini-preview').dataset.state = kind;
     $('#scan-text').textContent = kind === 'idle' ? '' : t('scan.' + kind);
     $('#scan-note').textContent = note || '';
   }
@@ -667,6 +725,7 @@
 
   DEMO_IMAGE = makeDemoImage();
   build();
+  setupMini();
   changed(true);
   // Testschnittstelle (Playwright): Zustand setzen und SVG abholen
   window.QRCApp = {
@@ -678,6 +737,7 @@
     getState() { return JSON.parse(JSON.stringify(state)); },
     current() { return last ? { svg: last.r.svg, payload: last.payload, error: last.r.error, pending: last.r.pending && last.r.pending.length, stats: last.r.stats } : null },
     ready() { return Promise.all([...imgCache.values()]).then(() => { renderPreview(); }); },
-    scanState() { return $('#scan').dataset.state; }
+    scanState() { return $('#scan').dataset.state; },
+    miniVisible() { return !$('#mini-preview').hidden; }
   };
 })();
