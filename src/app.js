@@ -622,7 +622,16 @@
     return 'qr-' + (slug || 'code');
   }
   function svgFile() { return '<?xml version="1.0" encoding="UTF-8"?>\n' + last.r.svg; }
-  function saveBlob(blob, name) {
+  // Im claude.ai-Artifact sind normale Downloads gesperrt; dort die "downloads"-Schnittstelle nutzen.
+  const artifactDownloads = window.claude && typeof window.claude.use === 'function'
+    ? Promise.resolve(window.claude.use('downloads')).catch(() => null) : Promise.resolve(null);
+  async function saveBlob(blob, name) {
+    const dl = await artifactDownloads;
+    if (dl) {
+      try { await dl.save({ filename: name, data: blob }); toast(t('saved', { name })); }
+      catch (e) { if (!e || e.code !== 'declined') toast(t('save.failed') + (e && e.code ? ' (' + e.code + ')' : '')); }
+      return;
+    }
     const url = URL.createObjectURL(blob);
     const a = h('a', { href: url, download: name });
     document.body.append(a); a.click(); a.remove();
