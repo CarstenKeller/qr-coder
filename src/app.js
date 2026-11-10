@@ -380,6 +380,51 @@
     close: ic('M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z')
   };
 
+  // ------------------------------------------------------------ Tooltips (D-01)
+  // Ein gemeinsames Element, immer im sichtbaren Bereich. Maus/Tastatur: beim Zeigen
+  // bzw. Fokus; Touch: langes Drücken (wie bei Android-Tooltips).
+
+  function setupTooltips() {
+    const tip = h('div', { class: 'tip', role: 'tooltip', id: 'tooltip', hidden: true });
+    document.body.append(tip);
+    let timer = null, current = null, suppressClick = false;
+    const place = el => {
+      const m = 8, r = el.getBoundingClientRect(), vw = document.documentElement.clientWidth, vh = window.innerHeight;
+      tip.textContent = el.getAttribute('data-tip');
+      tip.hidden = false;
+      const w = tip.offsetWidth, th = tip.offsetHeight;
+      let left = Math.min(Math.max(m, r.left + r.width / 2 - w / 2), vw - m - w);
+      let top = r.bottom + 6;
+      if (top + th > vh - m) top = r.top - 6 - th;
+      tip.style.left = Math.max(m, left) + 'px';
+      tip.style.top = Math.max(m, top) + 'px';
+    };
+    const show = (el, delay) => { clearTimeout(timer); current = el; timer = setTimeout(() => place(el), delay); };
+    const hide = () => { clearTimeout(timer); current = null; tip.hidden = true; };
+    const target = e => e.target && e.target.closest && e.target.closest('[data-tip]');
+    document.addEventListener('pointerover', e => { const el = target(e); if (el && e.pointerType === 'mouse' && el !== current) show(el, 350); });
+    document.addEventListener('pointerout', e => { const el = target(e); if (el && e.pointerType === 'mouse' && !el.contains(e.relatedTarget)) hide(); });
+    document.addEventListener('focusin', e => { const el = target(e); if (el && el.matches(':focus-visible')) show(el, 200); });
+    document.addEventListener('focusout', hide);
+    document.addEventListener('pointerdown', e => {
+      const el = target(e);
+      if (!el || e.pointerType === 'mouse') { hide(); return; }
+      clearTimeout(timer); current = el;
+      timer = setTimeout(() => { place(el); suppressClick = true; }, 500);
+    });
+    const endTouch = e => {
+      if (e.pointerType === 'mouse') return;
+      clearTimeout(timer);
+      if (!tip.hidden) setTimeout(hide, 1500);
+    };
+    document.addEventListener('pointerup', endTouch);
+    document.addEventListener('pointercancel', endTouch);
+    // Langes Drücken soll nur den Tooltip zeigen, nicht auch auslösen oder das Kontextmenü öffnen
+    document.addEventListener('click', e => { if (suppressClick) { suppressClick = false; if (target(e)) { e.preventDefault(); e.stopPropagation(); } } }, true);
+    document.addEventListener('contextmenu', e => { if (target(e)) e.preventDefault(); });
+    window.addEventListener('scroll', hide, { passive: true });
+  }
+
   // ------------------------------------------------------------ Aufbau
 
   function build() {
@@ -749,8 +794,24 @@
       if (items.length === 1) { shareAs(items[0].type); return; }
       menu.hidden = !menu.hidden;
       btn.setAttribute('aria-expanded', String(!menu.hidden));
+      if (!menu.hidden) placeMenu(menu, btn);
     });
-    document.addEventListener('click', e => { if (!menu.contains(e.target) && e.target !== btn) menu.hidden = true; });
+    const close = () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+    document.addEventListener('click', e => { if (!menu.contains(e.target) && e.target !== btn) close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    window.addEventListener('scroll', close, { passive: true });
+    window.addEventListener('resize', close);
+  }
+
+  /** Menü über (sonst unter) dem Knopf, waagerecht immer ganz im sichtbaren Bereich. */
+  function placeMenu(menu, btn) {
+    const m = 8, r = btn.getBoundingClientRect(), vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    const w = menu.offsetWidth, hgt = menu.offsetHeight;
+    const left = Math.min(Math.max(m, r.right - w), vw - m - w);
+    let top = r.top - hgt - 6;
+    if (top < m) top = Math.min(r.bottom + 6, vh - m - hgt);
+    menu.style.left = Math.max(m, left) + 'px';
+    menu.style.top = Math.max(m, top) + 'px';
   }
   async function shareAs(type) {
     if (!last || last.r.error) return;
@@ -916,6 +977,7 @@
 
   DEMO_IMAGE = makeDemoImage();
   build();
+  setupTooltips();
   setupMini();
   changed(true);
   // Testschnittstelle (Playwright): Zustand setzen und SVG abholen

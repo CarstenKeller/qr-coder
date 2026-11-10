@@ -175,6 +175,34 @@ test('Teilen: PNG und SVG als Datei, wenn der Browser Dateien teilen kann', asyn
   assert.deepEqual(app.errors, []);
 });
 
+test('Teilen-Menü und Tooltip bleiben auf schmalen Handys im sichtbaren Bereich', async () => {
+  const init = () => { navigator.canShare = () => true; navigator.share = async () => {}; };
+  for (const width of [320, 360, 412]) {
+    const app = await openApp('index.html', { width, height: 800 }, init);
+    try {
+      const { page } = app;
+      // erst die Lesbarkeitsprüfung abwarten: deren Text verschiebt sonst noch das Layout
+      await page.waitForFunction(() => ['ok', 'hard', 'fail'].includes(window.QRCApp.scanState()), null, { timeout: 15000 });
+      await page.locator('#btn-share').scrollIntoViewIfNeeded();
+      const inView = async sel => page.$eval(sel, el => {
+        const r = el.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+        return { ok: r.left >= 0 && r.right <= vw && r.top >= 0 && r.bottom <= window.innerHeight, r: [r.left, r.right, r.top, r.bottom], vw };
+      });
+      await page.click('#btn-share');
+      const m = await inView('#share-menu');
+      assert.ok(m.ok, 'Menü bei ' + width + ' px: ' + JSON.stringify(m));
+      await page.keyboard.press('Escape');
+      await page.mouse.move(1, 1);
+      await page.hover('#btn-share');
+      await page.waitForFunction(() => { const t = document.getElementById('tooltip'); return !t.hidden && t.textContent === 'Teilen (z. B. WhatsApp)'; });
+      const tp = await inView('#tooltip');
+      assert.ok(tp.ok, 'Tooltip bei ' + width + ' px: ' + JSON.stringify(tp));
+      assert.equal(await page.textContent('#tooltip'), 'Teilen (z. B. WhatsApp)');
+    } finally { await app.browser.close(); }
+    assert.deepEqual(app.errors, []);
+  }
+});
+
 test('Teilen-Knopf fehlt, wenn der Browser keine Dateien teilen kann', async () => {
   const app = await openApp('index.html', undefined, () => { navigator.canShare = undefined; });
   try { assert.equal(await app.page.isVisible('#btn-share'), false); } finally { await app.browser.close(); }
