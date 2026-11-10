@@ -19,9 +19,9 @@ einem bildgestalteten code, mit und ohne Bereiche für Text und Logos."
   `index.html` läuft direkt aus dem Repo/Dateisystem; zusätzlich baut CI eine
   **einzelne HTML-Datei** (`qr-coder.html`, alles eingebettet) als Release.
   Alles läuft lokal im Browser, es werden keine Daten verschickt.
-- **A3 Hosting:** zunächst kein GitHub Pages (müsste in den Repo-Einstellungen
-  einmalig von Hand aktiviert werden). Zum Ausprobieren: Release-Datei bzw.
-  Artifact-Link.
+- **A3 Hosting:** vorläufig GitHub Pages (Vorgabe des Nutzers, 2026-11-10;
+  muss in den Repo-Einstellungen einmalig aktiviert werden), zusätzlich
+  Release-Datei je CI-Lauf. Keine claude.ai-Artifacts.
 - **A4 Design:** Register aus `context-plus-skills` gilt sinngemäß fürs Web
   (es ist Android-formuliert): D-01 Icon + Tooltip, D-04 Entprellen,
   D-06 DE/EN (Deutsch Standard, Sprache aus der Browsereinstellung, kein
@@ -52,8 +52,6 @@ einem bildgestalteten code, mit und ohne Bereiche für Text und Logos."
   unterschiedlich gut lesbar → In-App-Prüfung + Handy-Test.
 - Text im SVG nutzt Systemschriften; auf anderen Rechnern kann die Schrift
   anders aussehen (keine Umwandlung in Pfade).
-- Downloads im Artifact-Vorschaurahmen: nicht geprüft, ob der Browser dort
-  Downloads zulässt.
 
 ## Phase 1 – MVP (diese Sitzung)
 
@@ -78,7 +76,7 @@ einem bildgestalteten code, mit und ohne Bereiche für Text und Logos."
 - [ ] Logo frei positionierbar, mehrere Textfelder
 - [ ] Farbiger Halbton, Bildausschnitt wählen
 - [ ] Stapel-Erzeugung (CSV → viele SVGs)
-- [ ] GitHub Pages (nach Freigabe in den Repo-Einstellungen)
+- [x] GitHub Pages: Deploy-Job eingerichtet (2026-11-10), Aktivierung durch Nutzer ausstehend
 
 ## Fortschritt
 
@@ -91,4 +89,4 @@ einem bildgestalteten code, mit und ohne Bereiche für Text und Logos."
 - Korrektur aus dem Test: Eckmarken "Blatt"/"Tropfen" mit Radius 50 % waren
   zusammen mit Punkt-Modulen oft unlesbar → Radius 35 %.
 - **Nicht geprüft:** echte Handy-Scanner, Firefox/Safari, Download im
-  Artifact-Rahmen, Darstellung des SVG in Grafikprogrammen (Inkscape, Illustrator).
+  Darstellung des SVG in Grafikprogrammen (Inkscape, Illustrator).

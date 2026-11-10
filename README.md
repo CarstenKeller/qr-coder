@@ -7,6 +7,8 @@ verschickt.
 
 ## Benutzen
 
+- **Online (vorläufig über GitHub Pages):** https://carstenkeller.github.io/qr-coder/
+  – erreichbar, sobald Pages in den Repo-Einstellungen aktiviert ist.
 - **Direkt:** `index.html` im Browser öffnen (funktioniert auch per `file://`).
 - **Als eine Datei:** jeder CI-Lauf legt ein Release `build-<hash>` mit
   `qr-coder-<hash>.html` an – herunterladen, öffnen, fertig.

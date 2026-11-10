@@ -51,6 +51,17 @@ jobs:
           echo "path=$out" >> "$GITHUB_OUTPUT"
           echo "name=$(basename "$out")" >> "$GITHUB_OUTPUT"
 
+      # Vorläufige Bereitstellung über GitHub Pages (Skill github-pages)
+      - name: Seite für Pages vorbereiten
+        run: |
+          mkdir -p _site
+          cp dist/qr-coder.html _site/index.html
+
+      - name: Seite für Pages hochladen
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
       - name: Release mit Einzeldatei
         uses: softprops/action-gh-release@v2
         with:
@@ -62,3 +73,20 @@ jobs:
 
             Datei: `${{ steps.out.outputs.name }}`
           files: ${{ steps.out.outputs.path }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    # Vorläufig: scheitert, bis Pages in den Repo-Einstellungen aktiviert ist;
+    # der Lauf soll trotzdem grün bleiben. Nach bestätigter Aktivierung entfernen.
+    continue-on-error: true
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Auf GitHub Pages veröffentlichen
+        id: deployment
+        uses: actions/deploy-pages@v4

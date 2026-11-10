@@ -15,8 +15,3 @@ html = html.replace('</title>', '</title>\n<meta name="generator" content="qr-co
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist', 'qr-coder.html'), html);
 console.log('dist/qr-coder.html', Math.round(html.length / 1024) + ' kB');
-
-// Variante für claude.ai-Artifacts: ohne doctype/html/head/body (das Gerüst setzt der Dienst).
-const head = /<head>([\s\S]*?)<\/head>/.exec(html)[1].replace(/<meta (charset|name="viewport")[^>]*>\n?/g, '');
-const body = /<body>([\s\S]*)<\/body>/.exec(html)[1];
-fs.writeFileSync(path.join(root, 'dist', 'qr-coder-artifact.html'), head.trim() + '\n' + body.trim() + '\n');
