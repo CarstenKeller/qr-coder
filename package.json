@@ -1,0 +1,17 @@
+{
+  "name": "qr-coder",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Webapp: QR-Codes gestalten und als SVG speichern",
+  "scripts": {
+    "test": "node --test \"tests/*.test.mjs\"",
+    "build": "node tools/build-single.mjs",
+    "serve": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "jsqr": "1.4.0",
+    "playwright": "1.63.0",
+    "qrcode-generator": "2.0.4",
+    "zxing-wasm": "3.1.6"
+  }
+}

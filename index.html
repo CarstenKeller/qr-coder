@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>QR-Coder</title>
+<link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm11-2h2v2h-2v-2zm-3 0h2v3h-2v-3zm5 3h3v2h-3v-2zm-5 2h3v3h-3v-3zm5 2h3v1h-3v-1zm1-7h2v2h-2v-2z"/></svg>
+    <div>
+      <h1 id="app-title">QR-Coder</h1>
+      <p id="app-tagline" class="tagline"></p>
+    </div>
+  </div>
+  <div class="actions">
+    <!-- Design D-01: Aktionen als Icon mit Tooltip -->
+    <button id="btn-reset" type="button" class="icon-btn" data-icon="reset" data-tip-key="tip.reset"></button>
+    <div class="menu-wrap">
+      <button id="btn-theme" type="button" class="icon-btn" data-icon="theme" data-tip-key="tip.theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-menu"></button>
+      <div id="theme-menu" class="menu" role="radiogroup" hidden></div>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="preview-pane" aria-live="polite">
+    <div class="card preview-card">
+      <div id="preview" class="preview"></div>
+      <div id="scan" class="scan" data-state="idle">
+        <span class="dot" aria-hidden="true"></span><span id="scan-text"></span>
+      </div>
+      <p id="scan-note" class="note"></p>
+      <p id="info" class="note"></p>
+      <ul id="warnings" class="warnings"></ul>
+      <div class="export-bar">
+        <button id="btn-svg" type="button" class="icon-btn primary" data-icon="download" data-tip-key="tip.svg"><span class="badge">SVG</span></button>
+        <button id="btn-png" type="button" class="icon-btn" data-icon="image" data-tip-key="tip.png"><span class="badge">PNG</span></button>
+        <button id="btn-copy" type="button" class="icon-btn" data-icon="copy" data-tip-key="tip.copy"></button>
+        <label class="size-field"><span data-i18n="export.size"></span>
+          <input id="export-size" type="number" min="16" max="8192" step="16" inputmode="numeric"></label>
+      </div>
+    </div>
+  </section>
+
+  <section class="controls-pane">
+    <h2 class="sr" data-i18n="presets"></h2>
+    <div id="presets" class="presets" role="list"></div>
+    <div id="controls"></div>
+  </section>
+</main>
+
+<footer class="footer">
+  <p data-i18n="footer"></p>
+  <p class="small" data-i18n="footer.licenses"></p>
+</footer>
+
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="vendor/qrcode.js"></script>
+<script src="vendor/jsQR.js"></script>
+<script src="vendor/zxing-reader.js"></script>
+<script src="vendor/zxing-reader-wasm.js"></script>
+<script src="src/i18n.js"></script>
+<script src="src/content.js"></script>
+<script src="src/render.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+name: Test und Einzeldatei bauen
+
+on:
+  push:
+    branches:
+      # Bewusst jeder Branch: Claude-Sitzungen arbeiten auf Branches wie 'ccr-...'.
+      - '**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Abhängigkeiten
+        run: npm ci
+
+      - name: Chromium für Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Kurzer Commit-Hash
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Einzeldatei bauen
+        run: npm run build
+
+      - name: Tests (Node + Browser, Rücklesen mit ZXing)
+        run: npm test
+
+      - name: Datei mit Commit-Hash benennen
+        id: out
+        run: |
+          out="dist/qr-coder-${{ steps.vars.outputs.sha_short }}.html"
+          cp dist/qr-coder.html "$out"
+          echo "path=$out" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$out")" >> "$GITHUB_OUTPUT"
+
+      - name: Release mit Einzeldatei
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ steps.vars.outputs.sha_short }}
+          name: "Build ${{ steps.vars.outputs.sha_short }}"
+          body: |
+            QR-Coder als einzelne HTML-Datei für Commit ${{ github.sha }} (Branch `${{ github.ref_name }}`).
+            Herunterladen und im Browser öffnen – läuft komplett lokal.
+
+            Datei: `${{ steps.out.outputs.name }}`
+          files: ${{ steps.out.outputs.path }}
